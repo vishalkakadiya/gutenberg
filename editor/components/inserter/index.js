@@ -87,11 +87,32 @@ class Inserter extends Component {
 }
 
 export default compose( [
-	withSelect( ( select ) => ( {
-		title: select( 'core/editor' ).getEditedPostAttribute( 'title' ),
-		insertionPoint: select( 'core/editor' ).getBlockInsertionPoint(),
-		selectedBlock: select( 'core/editor' ).getSelectedBlock(),
-	} ) ),
+	withContext( 'editor' )( ( settings ) => {
+		const { blockTypes, templateLock } = settings;
+
+		return {
+			enabledBlockTypes: blockTypes,
+			isLocked: !! templateLock,
+		};
+	} ),
+	withSelect( ( select, { enabledBlockTypes } ) => {
+		const {
+			getEditedPostAttribute,
+			getBlockInsertionPoint,
+			getSelectedBlock,
+			getSupportedBlocks,
+		} = select( 'core/editor' );
+
+		const insertionPoint = getBlockInsertionPoint();
+		const { rootUID } = insertionPoint;
+		const supportedBlocks = getSupportedBlocks( rootUID, enabledBlockTypes );
+		return {
+			title: getEditedPostAttribute( 'title' ),
+			insertionPoint,
+			selectedBlock: getSelectedBlock(),
+			hasSupportedBlocks: true === supportedBlocks || ! isEmpty( supportedBlocks ),
+		};
+	} ),
 	withDispatch( ( dispatch, ownProps ) => ( {
 		showInsertionPoint: dispatch( 'core/editor' ).showInsertionPoint,
 		hideInsertionPoint: dispatch( 'core/editor' ).hideInsertionPoint,
@@ -106,12 +127,4 @@ export default compose( [
 			return dispatch( 'core/editor' ).insertBlock( insertedBlock, index, rootUID );
 		},
 	} ) ),
-	withContext( 'editor' )( ( settings ) => {
-		const { blockTypes, templateLock } = settings;
-
-		return {
-			hasSupportedBlocks: true === blockTypes || ! isEmpty( blockTypes ),
-			isLocked: !! templateLock,
-		};
-	} ),
 ] )( Inserter );

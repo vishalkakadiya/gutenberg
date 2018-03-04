@@ -1,7 +1,16 @@
 /**
+ * External dependencies
+ */
+import { isEqual, omit } from 'lodash';
+
+/**
  * WordPress dependencies
  */
-import { Component } from '@wordpress/element';
+import { Component, compose } from '@wordpress/element';
+import {
+	synchronizeBlocksWithTemplate,
+} from '@wordpress/blocks';
+import { withSelect, withDispatch } from '@wordpress/data';
 
 /**
  * Internal dependencies
@@ -32,34 +41,94 @@ const INNER_BLOCK_LIST_CACHE = {};
  */
 export function createInnerBlockList( uid, renderBlockMenu, showContextualToolbar ) {
 	if ( ! INNER_BLOCK_LIST_CACHE[ uid ] ) {
+		const InnerBlockListComponent = class extends Component {
+			constructor() {
+				super( ...arguments );
+				this.updateNestedSettings = this.updateNestedSettings.bind( this );
+				this.insertTemplateBlocks = this.insertTemplateBlocks.bind( this );
+			}
+
+			insertTemplateBlocks( template ) {
+				const { block, insertBlocks } = this.props;
+				if ( template && ! block.innerBlocks.length ) {
+					// synchronizeBlocksWithTemplate( [], template ) parses the template structure,
+					// and returns/creates the necessary blocks to represent it.
+					insertBlocks( synchronizeBlocksWithTemplate( [], template ) );
+				}
+			}
+
+			updateNestedSettings( newSettings ) {
+				if ( ! isEqual( this.props.blockListSettings, newSettings ) ) {
+					this.props.updateNestedSettings( newSettings );
+				}
+			}
+
+			componentWillMount() {
+				INNER_BLOCK_LIST_CACHE[ uid ][ 1 ]++;
+				this.updateNestedSettings( {
+					supportedBlocks: this.props.allowedBlocks,
+				} );
+				this.insertTemplateBlocks( this.props.template );
+			}
+
+			componentWillReceiveProps( nextProps ) {
+				this.updateNestedSettings( {
+					supportedBlocks: nextProps.allowedBlocks,
+				} );
+			}
+
+			componentWillUnmount() {
+			// If, after decrementing the tracking count, there are no
+			// remaining instances of the component, remove from cache.
+				if ( ! INNER_BLOCK_LIST_CACHE[ uid ][ 1 ]-- ) {
+					delete INNER_BLOCK_LIST_CACHE[ uid ];
+				}
+			}
+
+			render() {
+				return (
+					<BlockList
+						rootUID={ uid }
+						renderBlockMenu={ renderBlockMenu }
+						showContextualToolbar={ showContextualToolbar }
+						{ ...omit(
+							this.props, [
+								'allowedBlocks',
+								'block',
+								'blockListSettings',
+								'insertBlocks',
+								'template',
+								'updateNestedSettings',
+							]
+						) } />
+				);
+			}
+		};
+
+		const InnerBlockListComponentContainer = compose(
+			withSelect( ( select ) => {
+				const { getBlock, getBlockListSettings } = select( 'core/editor' );
+				return {
+					block: getBlock( uid ),
+					blockListSettings: getBlockListSettings( uid ),
+				};
+			} ),
+			withDispatch( ( dispatch ) => {
+				const { insertBlocks, updateBlockListSettings } = dispatch( 'core/editor' );
+				return {
+					insertBlocks( blocks ) {
+						dispatch( insertBlocks( blocks, undefined, uid ) );
+					},
+					updateNestedSettings( settings ) {
+						dispatch( updateBlockListSettings( uid, settings ) );
+					},
+				};
+			} ),
+		)( InnerBlockListComponent );
+
 		INNER_BLOCK_LIST_CACHE[ uid ] = [
-			// The component class:
-			class extends Component {
-				componentWillMount() {
-					INNER_BLOCK_LIST_CACHE[ uid ][ 1 ]++;
-				}
-
-				componentWillUnmount() {
-					// If, after decrementing the tracking count, there are no
-					// remaining instances of the component, remove from cache.
-					if ( ! INNER_BLOCK_LIST_CACHE[ uid ][ 1 ]-- ) {
-						delete INNER_BLOCK_LIST_CACHE[ uid ];
-					}
-				}
-
-				render() {
-					return (
-						<BlockList
-							rootUID={ uid }
-							renderBlockMenu={ renderBlockMenu }
-							showContextualToolbar={ showContextualToolbar }
-							{ ...this.props } />
-					);
-				}
-			},
-
-			// A counter tracking active mounted instances:
-			0,
+			InnerBlockListComponentContainer,
+			0, // A counter tracking active mounted instances:
 		];
 	}
 

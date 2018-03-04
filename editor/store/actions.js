@@ -638,3 +638,11 @@ export function insertDefaultBlock( attributes, rootUID, index ) {
 		isProvisional: true,
 	};
 }
+
+export function updateBlockListSettings( id, settings ) {
+	return {
+		type: 'UPDATED_BLOCK_LIST_SETTINGS',
+		id,
+		settings,
+	};
+}

@@ -35,7 +35,12 @@ import { keycodes } from '@wordpress/utils';
 import './style.scss';
 import NoBlocks from './no-blocks';
 
-import { getInserterItems, getFrecentInserterItems } from '../../store/selectors';
+import {
+	getBlockInsertionPoint,
+	getInserterItems,
+	getFrecentInserterItems,
+	getSupportedBlocks,
+} from '../../store/selectors';
 import { fetchSharedBlocks } from '../../store/actions';
 import { default as InserterGroup } from './group';
 import BlockPreview from '../block-preview';
@@ -349,9 +354,11 @@ export default compose(
 	} ),
 	connect(
 		( state, ownProps ) => {
+			const { rootUID } = getBlockInsertionPoint( state );
+			const supportedBlocks = getSupportedBlocks( state, rootUID, ownProps.enabledBlockTypes );
 			return {
-				items: getInserterItems( state, ownProps.enabledBlockTypes ),
-				frecentItems: getFrecentInserterItems( state, ownProps.enabledBlockTypes ),
+				items: getInserterItems( state, supportedBlocks ),
+				frecentItems: getFrecentInserterItems( state, supportedBlocks ),
 			};
 		},
 		{ fetchSharedBlocks }
