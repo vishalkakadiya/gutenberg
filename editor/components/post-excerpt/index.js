@@ -25,7 +25,7 @@ function PostExcerpt( { excerpt, onUpdateExcerpt, instanceId } ) {
 			<label key="label" htmlFor={ id }>{ __( 'Write an excerpt (optional)' ) }</label>
 			<textarea
 				id={ id }
-				className="editor-post-excerpt__textarea"
+				className="editor-post-excerpt__textarea regular-text"
 				onChange={ onChange }
 				value={ excerpt }
 			/>
