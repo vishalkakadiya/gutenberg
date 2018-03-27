@@ -43,7 +43,7 @@ class Button extends Component {
 			...additionalProps
 		} = this.props;
 		const classes = classnames( 'components-button', className, {
-			button: ( isPrimary || isLarge ),
+			button: ( isPrimary || isLarge || isSmall ),
 			'button-primary': isPrimary,
 			'button-large': isLarge,
 			'button-small': isSmall,
