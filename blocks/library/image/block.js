@@ -4,7 +4,6 @@
 import classnames from 'classnames';
 import ResizableBox from 're-resizable';
 import {
-	find,
 	get,
 	isEmpty,
 	map,
@@ -16,7 +15,7 @@ import {
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { Component, compose } from '@wordpress/element';
+import { Component, Fragment, compose } from '@wordpress/element';
 import { getBlobByURL, revokeBlobURL, viewPort } from '@wordpress/utils';
 import {
 	Button,
@@ -175,10 +174,7 @@ class ImageBlock extends Component {
 			)
 		);
 
-		const availableSizes = this.getAvailableSizes();
-		const selectedSize = find( availableSizes, ( size ) => size.source_url === url );
-
-		if ( ! url || ! selectedSize ) {
+		if ( ! url ) {
 			return [
 				controls,
 				<ImagePlaceholder
@@ -191,6 +187,8 @@ class ImageBlock extends Component {
 			];
 		}
 
+		const availableSizes = this.getAvailableSizes();
+
 		const classes = classnames( className, {
 			'is-transient': 0 === url.indexOf( 'blob:' ),
 			'is-resized': !! width,
@@ -198,164 +196,171 @@ class ImageBlock extends Component {
 		} );
 
 		const figureStyle = width ? { width } : {};
-		const isResizable = [ 'wide', 'full' ].indexOf( align ) === -1 && ( ! viewPort.isExtraSmall() );
 
 		// Disable reason: Each block can be selected by clicking on it
 		/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/onclick-has-role, jsx-a11y/click-events-have-key-events */
-		return [
-			controls,
-			isSelected && (
-				<InspectorControls key="inspector">
-					<PanelBody title={ __( 'Image Settings' ) }>
-						<TextControl
-							label={ __( 'Textual Alternative' ) }
-							value={ alt }
-							onChange={ this.updateAlt }
-							help={ __( 'Describe the purpose of the image. Leave empty if the image is not a key part of the content.' ) }
-						/>
-						{ ! isEmpty( availableSizes ) && (
-							<SelectControl
-								label={ __( 'Source Type' ) }
-								value={ url }
-								options={ map( availableSizes, ( size, name ) => ( {
-									value: size.source_url,
-									label: startCase( name ),
-								} ) ) }
-								onChange={ this.updateImageURL }
-							/>
-						) }
-						<div className="blocks-image-dimensions">
-							<div className="blocks-image-dimensions__row">
-								<TextControl
-									type="number"
-									className="blocks-image-dimensions__width"
-									label={ __( 'Width' ) }
-									value={ width !== undefined ? width : '' }
-									placeholder={ selectedSize.width }
-									onChange={ ( value ) => {
-										setAttributes( { width: parseInt( value, 10 ) } );
-									} }
-								/>
-								<TextControl
-									type="number"
-									className="blocks-image-dimensions__height"
-									label={ __( 'Height' ) }
-									value={ height !== undefined ? height : '' }
-									placeholder={ selectedSize.height }
-									onChange={ ( value ) => {
-										setAttributes( { height: parseInt( value, 10 ) } );
-									} }
-								/>
-							</div>
-							<div className="blocks-image-dimensions__row">
-								<ButtonGroup aria-label={ __( 'Image Size' ) }>
-									{ [ 25, 50, 75, 100 ].map( ( scale ) => {
-										const scaledWidth = Math.round( selectedSize.width * ( scale / 100 ) );
-										const scaledHeight = Math.round( selectedSize.height * ( scale / 100 ) );
+		return (
+			<ImageSize src={ url } dirtynessTrigger={ align }>
+				{ ( sizes ) => {
+					const {
+						imageWidthWithinContainer,
+						imageHeightWithinContainer,
+						imageWidth,
+						imageHeight,
+					} = sizes;
 
-										const isCurrent = width === scaledWidth && height === scaledHeight;
+					return (
+						<Fragment>
+							{ controls }
+							{ isSelected && (
+								<InspectorControls key="inspector">
+									<PanelBody title={ __( 'Image Settings' ) }>
+										<TextControl
+											label={ __( 'Textual Alternative' ) }
+											value={ alt }
+											onChange={ this.updateAlt }
+											help={ __( 'Describe the purpose of the image. Leave empty if the image is not a key part of the content.' ) }
+										/>
+										{ ! isEmpty( availableSizes ) && (
+											<SelectControl
+												label={ __( 'Source Type' ) }
+												value={ url }
+												options={ map( availableSizes, ( size, name ) => ( {
+													value: size.source_url,
+													label: startCase( name ),
+												} ) ) }
+												onChange={ this.updateImageURL }
+											/>
+										) }
+										{ imageWidthWithinContainer && <div className="blocks-image-dimensions">
+											<div className="blocks-image-dimensions__row">
+												<TextControl
+													type="number"
+													className="blocks-image-dimensions__width"
+													label={ __( 'Width' ) }
+													value={ width !== undefined ? width : '' }
+													placeholder={ Math.round( imageWidthWithinContainer ) }
+													onChange={ ( value ) => {
+														setAttributes( { width: parseInt( value, 10 ) } );
+													} }
+												/>
+												<TextControl
+													type="number"
+													className="blocks-image-dimensions__height"
+													label={ __( 'Height' ) }
+													value={ height !== undefined ? height : '' }
+													placeholder={ Math.round( imageHeightWithinContainer ) }
+													onChange={ ( value ) => {
+														setAttributes( { height: parseInt( value, 10 ) } );
+													} }
+												/>
+											</div>
+											<div className="blocks-image-dimensions__row">
+												<ButtonGroup aria-label={ __( 'Image Size' ) }>
+													{ [ 25, 50, 75, 100 ].map( ( scale ) => {
+														const scaledWidth = Math.round( imageWidthWithinContainer * ( scale / 100 ) );
+														const scaledHeight = Math.round( imageHeightWithinContainer * ( scale / 100 ) );
 
-										return (
-											<Button
-												key={ scale }
-												isSmall
-												isPrimary={ isCurrent }
-												aria-pressed={ isCurrent }
-												onClick={ () => {
-													setAttributes( { width: scaledWidth, height: scaledHeight } );
-												} }
-											>
-												{ scale }%
-											</Button>
-										);
-									} ) }
-								</ButtonGroup>
-								<Button
-									isSmall
-									onClick={ () => {
-										setAttributes( { width: undefined, height: undefined } );
-									} }
-								>
-									{ __( 'Reset' ) }
-								</Button>
-							</div>
-						</div>
-					</PanelBody>
-				</InspectorControls>
-			),
-			<figure key="image" className={ classes } style={ figureStyle }>
-				<ImageSize src={ url } dirtynessTrigger={ align }>
-					{ ( sizes ) => {
-						const {
-							imageWidthWithinContainer,
-							imageHeightWithinContainer,
-							imageWidth,
-							imageHeight,
-						} = sizes;
+														const isCurrent = width === scaledWidth && height === scaledHeight;
 
-						// Disable reason: Image itself is not meant to be
-						// interactive, but should direct focus to block
-						// eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-						const img = <img src={ url } alt={ alt } onClick={ this.onImageClick } />;
+														return (
+															<Button
+																key={ scale }
+																isSmall
+																isPrimary={ isCurrent }
+																aria-pressed={ isCurrent }
+																onClick={ () => {
+																	setAttributes( { width: scaledWidth, height: scaledHeight } );
+																} }
+															>
+																{ scale }%
+															</Button>
+														);
+													} ) }
+												</ButtonGroup>
+												<Button
+													isSmall
+													onClick={ () => {
+														setAttributes( { width: undefined, height: undefined } );
+													} }
+												>
+													{ __( 'Reset' ) }
+												</Button>
+											</div>
+										</div> }
+									</PanelBody>
+								</InspectorControls>
+							) }
+							<figure key="image" className={ classes } style={ figureStyle }>
+								{ ( () => {
+									const isResizable = [ 'wide', 'full' ].indexOf( align ) === -1 && ( ! viewPort.isExtraSmall() );
 
-						if ( ! isResizable || ! imageWidthWithinContainer ) {
-							return img;
-						}
+									// Disable reason: Image itself is not meant to be
+									// interactive, but should direct focus to block
+									// eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+									const img = <img src={ url } alt={ alt } onClick={ this.onImageClick } />;
 
-						const currentWidth = width || imageWidthWithinContainer;
-						const currentHeight = height || imageHeightWithinContainer;
+									if ( ! isResizable || ! imageWidthWithinContainer ) {
+										return img;
+									}
 
-						const ratio = imageWidth / imageHeight;
-						const minWidth = imageWidth < imageHeight ? MIN_SIZE : MIN_SIZE * ratio;
-						const minHeight = imageHeight < imageWidth ? MIN_SIZE : MIN_SIZE / ratio;
+									const currentWidth = width || imageWidthWithinContainer;
+									const currentHeight = height || imageHeightWithinContainer;
 
-						return (
-							<ResizableBox
-								size={ {
-									width: currentWidth,
-									height: currentHeight,
-								} }
-								minWidth={ minWidth }
-								maxWidth={ settings.maxWidth }
-								minHeight={ minHeight }
-								maxHeight={ settings.maxWidth / ratio }
-								lockAspectRatio
-								handleClasses={ {
-									topRight: 'wp-block-image__resize-handler-top-right',
-									bottomRight: 'wp-block-image__resize-handler-bottom-right',
-									topLeft: 'wp-block-image__resize-handler-top-left',
-									bottomLeft: 'wp-block-image__resize-handler-bottom-left',
-								} }
-								enable={ { top: false, right: true, bottom: false, left: false, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } }
-								onResizeStart={ () => {
-									toggleSelection( false );
-								} }
-								onResizeStop={ ( event, direction, elt, delta ) => {
-									setAttributes( {
-										width: parseInt( currentWidth + delta.width, 10 ),
-										height: parseInt( currentHeight + delta.height, 10 ),
-									} );
-									toggleSelection( true );
-								} }
-							>
-								{ img }
-							</ResizableBox>
-						);
-					} }
-				</ImageSize>
-				{ ( caption && caption.length > 0 ) || isSelected ? (
-					<RichText
-						tagName="figcaption"
-						placeholder={ __( 'Write caption…' ) }
-						value={ caption || [] }
-						onFocus={ this.onFocusCaption }
-						onChange={ ( value ) => setAttributes( { caption: value } ) }
-						isSelected={ this.state.captionFocused }
-						inlineToolbar
-					/>
-				) : null }
-			</figure>,
-		];
+									const ratio = imageWidth / imageHeight;
+									const minWidth = imageWidth < imageHeight ? MIN_SIZE : MIN_SIZE * ratio;
+									const minHeight = imageHeight < imageWidth ? MIN_SIZE : MIN_SIZE / ratio;
+
+									return (
+										<ResizableBox
+											size={ {
+												width: currentWidth,
+												height: currentHeight,
+											} }
+											minWidth={ minWidth }
+											maxWidth={ settings.maxWidth }
+											minHeight={ minHeight }
+											maxHeight={ settings.maxWidth / ratio }
+											lockAspectRatio
+											handleClasses={ {
+												topRight: 'wp-block-image__resize-handler-top-right',
+												bottomRight: 'wp-block-image__resize-handler-bottom-right',
+												topLeft: 'wp-block-image__resize-handler-top-left',
+												bottomLeft: 'wp-block-image__resize-handler-bottom-left',
+											} }
+											enable={ { top: false, right: true, bottom: false, left: false, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } }
+											onResizeStart={ () => {
+												toggleSelection( false );
+											} }
+											onResizeStop={ ( event, direction, elt, delta ) => {
+												setAttributes( {
+													width: parseInt( currentWidth + delta.width, 10 ),
+													height: parseInt( currentHeight + delta.height, 10 ),
+												} );
+												toggleSelection( true );
+											} }
+										>
+											{ img }
+										</ResizableBox>
+									);
+								} )() }
+								{ ( caption && caption.length > 0 ) || isSelected ? (
+									<RichText
+										tagName="figcaption"
+										placeholder={ __( 'Write caption…' ) }
+										value={ caption }
+										onFocus={ this.onFocusCaption }
+										onChange={ ( value ) => setAttributes( { caption: value } ) }
+										isSelected={ this.state.captionFocused }
+										inlineToolbar
+									/>
+								) : null }
+							</figure>
+						</Fragment>
+					);
+				} }
+			</ImageSize>
+		);
 		/* eslint-enable jsx-a11y/no-static-element-interactions, jsx-a11y/onclick-has-role, jsx-a11y/click-events-have-key-events */
 	}
 }
