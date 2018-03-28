@@ -99,6 +99,10 @@
 	.blocks-image-dimensions__width,
 	.blocks-image-dimensions__height {
 		margin-bottom: 0.5em;
+
+		::placeholder {
+			color: $dark-gray-100;
+		}
 	}
 
 	.blocks-image-dimensions__width {
