@@ -179,13 +179,17 @@ class ImageBlock extends Component {
 
 	renderInspectorControls( { imageWidthWithinContainer, imageHeightWithinContainer } ) {
 		const { attributes, isSelected, setAttributes } = this.props;
-		const { alt, url, width, height } = attributes;
+		const { align, alt, url, width, height } = attributes;
 
 		if ( ! isSelected ) {
 			return null;
 		}
 
 		const availableSizes = this.getAvailableSizes();
+
+		const hasBlockAlignment = align === 'wide' || align === 'full';
+		const hasContainerSize = !! imageWidthWithinContainer && !! imageHeightWithinContainer;
+		const isResizable = ! hasBlockAlignment && hasContainerSize;
 
 		return (
 			<InspectorControls key="inspector">
@@ -207,7 +211,7 @@ class ImageBlock extends Component {
 							onChange={ this.updateImageURL }
 						/>
 					) }
-					{ imageWidthWithinContainer && imageHeightWithinContainer && (
+					{ isResizable && (
 						<div className="blocks-image-dimensions">
 							<div className="blocks-image-dimensions__row">
 								<TextControl
@@ -274,14 +278,24 @@ class ImageBlock extends Component {
 		const { attributes, settings, toggleSelection, setAttributes } = this.props;
 		const { align, url, alt, width, height } = attributes;
 
-		const isResizable = [ 'wide', 'full' ].indexOf( align ) === -1 && ( ! viewPort.isExtraSmall() );
-
 		// Disable reason: Image itself is not meant to be interactive, but should direct focus to block
 		// eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events
 		const img = <img src={ url } alt={ alt } onClick={ this.onImageClick } />;
 
-		if ( ! isResizable || ! imageWidthWithinContainer ) {
+		const hasBlockAlignment = align === 'wide' || align === 'full';
+		const hasContainerSize = !! imageWidthWithinContainer && !! imageHeightWithinContainer;
+		const isResizable = ! hasBlockAlignment && hasContainerSize;
+
+		if ( ! isResizable ) {
 			return img;
+		}
+
+		if ( viewPort.isExtraSmall() ) {
+			return (
+				<div style={ { width, height } }>
+					{ img }
+				</div>
+			);
 		}
 
 		const currentWidth = width || imageWidthWithinContainer;
@@ -336,7 +350,7 @@ class ImageBlock extends Component {
 
 	render() {
 		const { attributes, setAttributes, isSelected, className } = this.props;
-		const { url, caption, align, width } = attributes;
+		const { url, caption, align, width, height } = attributes;
 
 		if ( ! url ) {
 			return (
@@ -355,7 +369,7 @@ class ImageBlock extends Component {
 
 		const classes = classnames( className, {
 			'is-transient': 0 === url.indexOf( 'blob:' ),
-			'is-resized': !! width,
+			'is-resized': !! width || !! height,
 			'is-focused': isSelected,
 		} );
 
