@@ -1,4 +1,9 @@
 /**
+ * External dependencies
+ */
+import { omit } from 'lodash';
+
+/**
  * WordPress dependencies
  */
 import { IconButton, PanelBody, RangeControl, ToggleControl, Toolbar } from '@wordpress/components';
@@ -198,36 +203,88 @@ export const settings = {
 		);
 	},
 
-	deprecated: [ {
-		attributes: {
-			...blockAttributes,
-			title: {
-				type: 'array',
-				source: 'children',
-				selector: 'h2',
+	deprecated: [
+		{
+			attributes: {
+				...blockAttributes,
+				title: {
+					type: 'array',
+					source: 'children',
+					selector: 'p',
+				},
+				contentAlign: {
+					type: 'string',
+					default: 'center',
+				},
+			},
+
+			save( { attributes, className } ) {
+				const { url, title, hasParallax, dimRatio, align, contentAlign } = attributes;
+				const style = backgroundImageStyles( url );
+				const classes = classnames(
+					className,
+					dimRatioToClass( dimRatio ),
+					{
+						'has-background-dim': dimRatio !== 0,
+						'has-parallax': hasParallax,
+						[ `has-${ contentAlign }-content` ]: contentAlign !== 'center',
+					},
+					align ? `align${ align }` : null,
+				);
+
+				return (
+					<div className={ classes } style={ style }>
+						{ title && title.length > 0 && (
+							<p className="wp-block-cover-image-text">{ title }</p>
+						) }
+					</div>
+				);
+			},
+
+			migrate( attributes ) {
+				return [
+					omit( attributes, [ 'title', 'contentAlign' ] ),
+					[ createBlock( 'core/paragraph', {
+						content: attributes.title,
+						align: attributes.contentAlign,
+						fontSize: 'large',
+						placeholder: __( 'Write title…' ),
+						textColor: '#fff',
+					} ) ],
+				];
 			},
 		},
-
-		save( { attributes, className } ) {
-			const { url, title, hasParallax, dimRatio, align } = attributes;
-			const style = backgroundImageStyles( url );
-			const classes = classnames(
-				className,
-				dimRatioToClass( dimRatio ),
-				{
-					'has-background-dim': dimRatio !== 0,
-					'has-parallax': hasParallax,
+		{
+			attributes: {
+				...blockAttributes,
+				title: {
+					type: 'array',
+					source: 'children',
+					selector: 'h2',
 				},
-				align ? `align${ align }` : null,
-			);
+			},
 
-			return (
-				<section className={ classes } style={ style }>
-					<h2>{ title }</h2>
-				</section>
-			);
+			save( { attributes, className } ) {
+				const { url, title, hasParallax, dimRatio, align } = attributes;
+				const style = backgroundImageStyles( url );
+				const classes = classnames(
+					className,
+					dimRatioToClass( dimRatio ),
+					{
+						'has-background-dim': dimRatio !== 0,
+						'has-parallax': hasParallax,
+					},
+					align ? `align${ align }` : null,
+				);
+
+				return (
+					<section className={ classes } style={ style }>
+						<h2>{ title }</h2>
+					</section>
+				);
+			},
 		},
-	} ],
+	],
 };
 
 function dimRatioToClass( ratio ) {
