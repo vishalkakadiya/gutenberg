@@ -4,15 +4,40 @@
 import { shallow } from 'enzyme';
 
 /**
+ * WordPress dependencies
+ */
+import { registerBlockType, unregisterBlockType } from '@wordpress/blocks';
+
+/**
  * Internal dependencies
  */
 import { ReusableBlockSettings } from '../reusable-block-settings';
 
 describe( 'ReusableBlockSettings', () => {
+	beforeAll( () => {
+		registerBlockType( 'test/shareable', {
+			title: 'Consider Sharing Me',
+			category: 'common',
+			save: () => null,
+		} );
+		registerBlockType( 'test/unshareable', {
+			title: 'Don\'t You Dare Share Me',
+			category: 'common',
+			supports: { sharing: false },
+			save: () => null,
+		} );
+	} );
+
+	afterAll( () => {
+		unregisterBlockType( 'test/shareable' );
+		unregisterBlockType( 'test/unshareable' );
+	} );
+
 	it( 'should allow converting a static block to reusable', () => {
 		const onConvert = jest.fn();
 		const wrapper = shallow(
 			<ReusableBlockSettings
+				block={ { name: 'test/shareable' } }
 				reusableBlock={ null }
 				onConvertToReusable={ onConvert }
 			/>
@@ -29,6 +54,7 @@ describe( 'ReusableBlockSettings', () => {
 		const onConvert = jest.fn();
 		const wrapper = shallow(
 			<ReusableBlockSettings
+				block={ { name: 'core/block' } }
 				reusableBlock={ {} }
 				onConvertToStatic={ onConvert }
 			/>
@@ -45,6 +71,7 @@ describe( 'ReusableBlockSettings', () => {
 		const onDelete = jest.fn();
 		const wrapper = shallow(
 			<ReusableBlockSettings
+				block={ { name: 'core/block' } }
 				reusableBlock={ { id: 123 } }
 				onDelete={ onDelete }
 			/>
@@ -55,5 +82,16 @@ describe( 'ReusableBlockSettings', () => {
 
 		wrapper.find( 'IconButton' ).last().simulate( 'click' );
 		expect( onDelete ).toHaveBeenCalledWith( 123 );
+	} );
+
+	it( 'should render null when block does not support sharing', () => {
+		const wrapper = shallow(
+			<ReusableBlockSettings
+				block={ { name: 'test/unshareable' } }
+				reusableBlock={ null }
+			/>
+		);
+
+		expect( wrapper.isEmptyRender() ).toBe( true );
 	} );
 } );
