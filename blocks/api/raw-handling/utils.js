@@ -6,7 +6,7 @@ import { includes, omit } from 'lodash';
 /**
  * WordPress dependencies
  */
-import { unwrap, insertAfter } from '@wordpress/utils';
+import { unwrap, insertAfter, remove } from '@wordpress/utils';
 
 /**
  * Browser dependencies
@@ -24,7 +24,7 @@ const phrasingContentTagGroups = [
 ];
 
 /**
- * Tree of possible paths for phrasing content.
+ * Schema of possible paths for phrasing content.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Phrasing_content
  *
@@ -52,7 +52,7 @@ const phrasingContentSchema = {
 } );
 
 /**
- * Tree of possible paths for list content.
+ * Schema of possible paths for list content.
  *
  * @type {Object}
  */
@@ -74,7 +74,7 @@ const listContentSchema = {
 } );
 
 /**
- * Tree of possible paths for embedded content.
+ * Schema of possible paths for embedded content.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Content_categories#Embedded_content
  *
@@ -91,7 +91,7 @@ const embeddedContentSchema = {
 };
 
 /**
- * Tree of possible paths for block content.
+ * Schema of possible paths for block content.
  *
  * @type {Object}
  */
@@ -184,6 +184,11 @@ const blockContentSchema = {
 // A blockquote can contain any of the above.
 blockContentSchema.blockquote.children = omit( blockContentSchema, 'blockquote' );
 
+/**
+ * Schema of possible paths for all content.
+ *
+ * @type {Object}
+ */
 const contentSchema = {
 	...phrasingContentSchema,
 	...blockContentSchema,
@@ -193,7 +198,7 @@ export function getPhrasingContentSchema() {
 	return phrasingContentSchema;
 }
 
-export function getContentSchema( { iframe } ) {
+export function getContentSchema( { iframe } = { iframe: true } ) {
 	const children = contentSchema.figure.children;
 
 	return {
@@ -224,19 +229,18 @@ function isInlineForTag( nodeName, tagName ) {
 	);
 }
 
-export function isInline( node, tagName ) {
-	const nodeName = node.nodeName.toLowerCase();
-	return phrasingContentSchema.hasOwnProperty( nodeName ) || isInlineForTag( nodeName, tagName );
-}
-
 export function isPhrasingContent( node ) {
 	const tagName = node.nodeName.toLowerCase();
 	return phrasingContentSchema.hasOwnProperty( tagName ) || tagName === 'span';
 }
 
+export function isInline( node, tagName ) {
+	const nodeName = node.nodeName.toLowerCase();
+	return isPhrasingContent( node ) || isInlineForTag( nodeName, tagName );
+}
+
 export function isBlockContent( node ) {
-	const tagName = node.nodeName.toLowerCase();
-	return blockContentSchema.hasOwnProperty( tagName );
+	return blockContentSchema.hasOwnProperty( node.nodeName.toLowerCase() );
 }
 
 /**
@@ -289,7 +293,7 @@ export function isPlain( HTML ) {
 
 	// Remove all BR nodes.
 	Array.from( brs ).forEach( ( node ) => {
-		node.parentNode.replaceChild( document.createTextNode( '\n' ), node );
+		node.parentNode.replaceChild( doc.createTextNode( '\n' ), node );
 	} );
 
 	// Merge all text nodes.
@@ -323,6 +327,7 @@ export function deepFilterNodeList( nodeList, filters, doc ) {
 
 /**
  * Given node filters, deeply filters HTML tags.
+ * Filters from the deepest nodes to the top.
  *
  * @param {string} HTML    The HTML to filter.
  * @param {Array}  filters An array of functions that can mutate with the provided node.
@@ -339,24 +344,32 @@ export function deepFilterHTML( HTML, filters = [] ) {
 	return doc.body.innerHTML;
 }
 
-function cleanNodeList( nodeList, possibilities, doc ) {
+/**
+ * Given a schema, unwraps or removes nodes, attributes and classes on a node
+ * list.
+ *
+ * @param {NodeList} nodeList The nodeList to filter.
+ * @param {Object}   schema   An array of functions that can mutate with the
+ *                            provided node.
+ * @param {Document} doc      The document of the nodeList.
+ */
+function cleanNodeList( nodeList, schema, doc ) {
 	Array.from( nodeList ).forEach( ( node ) => {
 		const tag = node.nodeName.toLowerCase();
 
-		if ( possibilities.hasOwnProperty( tag ) ) {
+		// It's a valid child.
+		if ( schema.hasOwnProperty( tag ) ) {
 			if ( node.nodeType === ELEMENT_NODE ) {
-				const { attributes = [], classes = [], children } = possibilities[ tag ];
+				const { attributes = [], classes = [], children } = schema[ tag ];
 
-				if ( ! node.hasChildNodes() && children ) {
-					node.parentNode.removeChild( node );
-					return;
-				}
-
+				// If the node is empty and it's supposed to have children,
+				// remove the node.
 				if ( isEmpty( node ) && children ) {
-					node.parentNode.removeChild( node );
+					remove( node );
 					return;
 				}
 
+				// Strip invalid attributes.
 				Array.from( node.attributes ).forEach( ( { name } ) => {
 					if ( name === 'class' || attributes.indexOf( name ) !== -1 ) {
 						return;
@@ -365,6 +378,7 @@ function cleanNodeList( nodeList, possibilities, doc ) {
 					node.removeAttribute( name );
 				} );
 
+				// Strip invalid classes.
 				const oldClasses = node.getAttribute( 'class' ) || '';
 				const newClasses = oldClasses
 					.split( ' ' )
@@ -378,8 +392,10 @@ function cleanNodeList( nodeList, possibilities, doc ) {
 				}
 
 				if ( node.hasChildNodes() ) {
+					// Contine if the node is supposed to have children.
 					if ( children ) {
 						cleanNodeList( node.childNodes, children, doc );
+					// Remove children if the node is not supposed to have any.
 					} else {
 						while ( node.firstChild ) {
 							node.removeNode( node.firstChild );
@@ -387,10 +403,14 @@ function cleanNodeList( nodeList, possibilities, doc ) {
 					}
 				}
 			}
+		// Invalid child. Continue with schema at the same place and unwrap.
 		} else {
-			cleanNodeList( node.childNodes, possibilities, doc );
+			cleanNodeList( node.childNodes, schema, doc );
 
-			if ( blockContentSchema.hasOwnProperty( node.nodeName.toLowerCase() ) && node.nextElementSibling ) {
+			// If the node to unwrap is a block level node, and it has content
+			// following, insert a line break. Usually happens when cleaning
+			// with a schema for phrasing content (inline paste).
+			if ( blockContentSchema.hasOwnProperty( tag ) && node.nextElementSibling ) {
 				insertAfter( doc.createElement( 'br' ), node );
 			}
 
@@ -399,12 +419,20 @@ function cleanNodeList( nodeList, possibilities, doc ) {
 	} );
 }
 
-export function removeInvalidHTML( HTML, possibilities ) {
+/**
+ * Given a schema, unwraps or removes nodes, attributes and classes on HTML.
+ *
+ * @param {string} HTML   The HTML to clean up.
+ * @param {Object} schema Schema for the HTML.
+ *
+ * @return {string} The cleaned up HTML.
+ */
+export function removeInvalidHTML( HTML, schema ) {
 	const doc = document.implementation.createHTMLDocument( '' );
 
 	doc.body.innerHTML = HTML;
 
-	cleanNodeList( doc.body.childNodes, possibilities, doc );
+	cleanNodeList( doc.body.childNodes, schema, doc );
 
 	return doc.body.innerHTML;
 }

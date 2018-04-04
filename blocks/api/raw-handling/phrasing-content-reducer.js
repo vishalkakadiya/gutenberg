@@ -13,7 +13,7 @@ import { isPhrasingContent, isBlockContent } from './utils';
  */
 const { ELEMENT_NODE } = window.Node;
 
-export default function( node ) {
+export default function( node, doc ) {
 	if ( node.nodeType !== ELEMENT_NODE ) {
 		return;
 	}
@@ -23,18 +23,18 @@ export default function( node ) {
 		const fontStyle = node.style.fontStyle;
 
 		if ( fontWeight === 'bold' || fontWeight === '700' ) {
-			node = replaceTag( node, 'strong' );
+			node = replaceTag( node, 'strong', doc );
 		} else if ( fontStyle === 'italic' ) {
-			node = replaceTag( node, 'em' );
+			node = replaceTag( node, 'em', doc );
 		}
 	}
 
 	if ( node.nodeName === 'B' ) {
-		node = replaceTag( node, 'strong' );
+		node = replaceTag( node, 'strong', doc );
 	}
 
 	if ( node.nodeName === 'I' ) {
-		node = replaceTag( node, 'em' );
+		node = replaceTag( node, 'em', doc );
 	}
 
 	if (

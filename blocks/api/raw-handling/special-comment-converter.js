@@ -20,10 +20,11 @@ const { COMMENT_NODE } = window.Node;
  * The custom element is then expected to be recognized by any registered
  * block's `raw` transform.
  *
- * @param {Node} node The node to be processed.
+ * @param {Node}     node The node to be processed.
+ * @param {Document} doc  The document of the node.
  * @return {void}
  */
-export default function( node ) {
+export default function( node, doc ) {
 	if (
 		node.nodeType !== COMMENT_NODE ||
 		node.nodeValue.indexOf( 'more' ) !== 0
@@ -53,7 +54,7 @@ export default function( node ) {
 	}
 
 	// Conjure up a custom More element
-	const more = createMore( customText, noTeaser );
+	const more = createMore( customText, noTeaser, doc );
 
 	// Append it to the top level for later conversion to blocks
 	let parent = node.parentNode;
@@ -63,8 +64,8 @@ export default function( node ) {
 	replace( node, more );
 }
 
-function createMore( customText, noTeaser ) {
-	const node = document.createElement( 'wp-block' );
+function createMore( customText, noTeaser, doc ) {
+	const node = doc.createElement( 'wp-block' );
 	node.dataset.block = 'core/more';
 	if ( customText ) {
 		node.dataset.customText = customText;

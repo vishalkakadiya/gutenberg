@@ -11,11 +11,12 @@ const { ELEMENT_NODE } = window.Node;
 /**
  * This filter takes embedded content out of paragraphs.
  *
- * @param {Node} node The node to filter.
+ * @param {Node}     node The node to filter.
+ * @param {Document} doc  The document of the node.
  *
  * @return {void}
  */
-export default function( node ) {
+export default function( node, doc ) {
 	if ( node.nodeType !== ELEMENT_NODE ) {
 		return;
 	}
@@ -42,7 +43,7 @@ export default function( node ) {
 		wrapper = wrapper.parentElement;
 	}
 
-	const figure = document.createElement( 'figure' );
+	const figure = doc.createElement( 'figure' );
 
 	if ( wrapper ) {
 		wrapper.parentNode.insertBefore( figure, wrapper );
