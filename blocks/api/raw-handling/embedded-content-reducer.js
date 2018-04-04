@@ -25,6 +25,7 @@ export default function( node ) {
 	}
 
 	let nodeToInsert = node;
+
 	// if the embedded is an image and its parent is an anchor with just the image
 	// take the anchor out instead of just the image
 	if (
@@ -41,7 +42,13 @@ export default function( node ) {
 		wrapper = wrapper.parentElement;
 	}
 
+	const figure = document.createElement( 'figure' );
+
 	if ( wrapper ) {
-		wrapper.parentNode.insertBefore( nodeToInsert, wrapper );
+		wrapper.parentNode.insertBefore( figure, wrapper );
+	} else {
+		nodeToInsert.parentNode.insertBefore( figure, nodeToInsert );
 	}
+
+	figure.appendChild( nodeToInsert );
 }

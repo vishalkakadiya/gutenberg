@@ -6,18 +6,7 @@ import { equal } from 'assert';
 /**
  * Internal dependencies
  */
-import createUnwrapper from '../create-unwrapper';
-import { deepFilterHTML, isEmpty, isInvalidInline, isPlain } from '../utils';
-
-const spanUnwrapper = createUnwrapper( ( node ) => node.nodeName === 'SPAN' );
-const inlineUnwrapper = createUnwrapper( ( node ) => node.nodeName === 'EM' );
-
-describe( 'deepFilterHTML', () => {
-	it( 'should not error', () => {
-		equal( deepFilterHTML( '<span><em>test</em></span>', [ spanUnwrapper, inlineUnwrapper ] ), 'test' );
-		equal( deepFilterHTML( '<em><span>test</span></em>', [ spanUnwrapper, inlineUnwrapper ] ), 'test' );
-	} );
-} );
+import { isEmpty, isPlain } from '../utils';
 
 describe( 'isEmpty', () => {
 	function isEmptyHTML( HTML ) {
@@ -54,28 +43,6 @@ describe( 'isEmpty', () => {
 
 	it( 'should return true for element with mixed empty pieces', () => {
 		equal( isEmptyHTML( ' <br><br><em>&nbsp; </em>' ), true );
-	} );
-} );
-
-describe( 'isInvalidInline', () => {
-	function isInvalidInlineHTML( HTML ) {
-		const doc = document.implementation.createHTMLDocument( '' );
-
-		doc.body.innerHTML = HTML;
-
-		return isInvalidInline( doc.body.firstChild );
-	}
-
-	it( 'should return true for div element', () => {
-		equal( isInvalidInlineHTML( '<em><div>test</div></em>' ), true );
-	} );
-
-	it( 'should return true for deep div element', () => {
-		equal( isInvalidInlineHTML( '<em><strong><div>test</div><strong></em>' ), true );
-	} );
-
-	it( 'should return false for valid structure', () => {
-		equal( isInvalidInlineHTML( '<em>test</em>' ), false );
 	} );
 } );
 

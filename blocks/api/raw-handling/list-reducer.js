@@ -1,7 +1,16 @@
 /**
+ * WordPress dependencies
+ */
+import { unwrap } from '@wordpress/utils';
+
+/**
  * Browser dependencies
  */
 const { ELEMENT_NODE } = window.Node;
+
+function isList( node ) {
+	return node.nodeName === 'OL' || node.nodeName === 'UL';
+}
 
 function shallowTextContent( element ) {
 	return [ ...element.childNodes ]
@@ -14,9 +23,7 @@ export default function( node ) {
 		return;
 	}
 
-	const type = node.nodeName;
-
-	if ( type !== 'OL' && type !== 'UL' ) {
+	if ( ! isList( node ) ) {
 		return;
 	}
 
@@ -28,7 +35,7 @@ export default function( node ) {
 	// * There is only one list item.
 	if (
 		prevElement &&
-		prevElement.nodeName === type &&
+		prevElement.nodeName === node.nodeName &&
 		list.children.length === 1
 	) {
 		prevElement.appendChild( list.firstChild );
@@ -54,6 +61,17 @@ export default function( node ) {
 		} else {
 			parentList.parentNode.insertBefore( list, parentList );
 			parentList.parentNode.removeChild( parentList );
+		}
+	}
+
+	// Invalid: OL/UL > OL/UL.
+	if ( parentElement && isList( parentElement ) ) {
+		const prevListItem = node.previousElementSibling;
+
+		if ( prevListItem ) {
+			prevListItem.appendChild( node );
+		} else {
+			unwrap( node );
 		}
 	}
 }

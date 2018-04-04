@@ -41,7 +41,7 @@ export const settings = {
 		from: [
 			{
 				type: 'raw',
-				isMatch: ( node ) => node.nodeName === 'IFRAME',
+				isMatch: ( node ) => node.nodeName === 'FIGURE' && node.firstChild.nodeName === 'IFRAME',
 			},
 		],
 	},
