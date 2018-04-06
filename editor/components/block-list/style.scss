@@ -345,41 +345,44 @@
 
 		// Adjust how movers behave on the full-wide block, and don't affect children
 		> .editor-block-mover {
-			display: none;
+			//display: none;
 		}
 
-		@include break-wide() {
-			> .editor-block-mover {
-				display: block;
-				top: -29px;
-				left: 10px;
-				height: auto;
-				width: auto;
-				z-index: inherit;
-
-				&:before {
-					content: none;
-				}
-			}
-
-			> .editor-block-mover .editor-block-mover__control {
-				float: left;
-			}
-		}
-
-		// Also adjust block settings menu
+		// Mover and settings in wide
+		> .editor-block-mover,
 		> .editor-block-settings-menu {
-			top: -41px;
-			right: 10px;
+			top: -29px;
+			bottom: auto;
 			height: auto;
+			width: auto;
+			z-index: inherit;
 
 			&:before {
 				content: none;
 			}
 		}
 
-		> .editor-block-settings-menu .editor-block-settings-menu__control {
+		> .editor-block-mover {
+			left: 10px;
+		}
+
+		> .editor-block-settings-menu {
+			right: 10px;
+		}
+
+		> .editor-block-mover .editor-block-mover__control,
+		> .editor-block-settings-menu .components-icon-button {
 			float: left;
+		}
+
+		// Hide mover until wide breakpoints, or it might be covered by toolbar
+		> .editor-block-mover {
+			display: none;
+		}
+		@include break-wide() {
+			> .editor-block-mover {
+				display: block;
+			}
 		}
 	}
 
