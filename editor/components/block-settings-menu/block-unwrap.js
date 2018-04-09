@@ -2,7 +2,7 @@
  * External dependencies
  */
 import { connect } from 'react-redux';
-import { noop, flatMap } from 'lodash';
+import { noop, flatMap, find } from 'lodash';
 
 /**
  * WordPress dependencies
@@ -10,6 +10,7 @@ import { noop, flatMap } from 'lodash';
 import { __ } from '@wordpress/i18n';
 import { IconButton, withContext } from '@wordpress/components';
 import { compose } from '@wordpress/element';
+import { getBlockTransforms } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -50,7 +51,10 @@ export default compose(
 			onUnwrap( blocks ) {
 				dispatch( replaceBlocks(
 					ownProps.uids,
-					flatMap( blocks, ( { innerBlocks } ) => innerBlocks ),
+					flatMap( blocks, ( { name, attributes, innerBlocks } ) => {
+						const transform = find( getBlockTransforms( 'to', name ), { type: 'unwrap' } );
+						return transform ? transform.transform( attributes, innerBlocks ) : innerBlocks;
+					} ),
 				) );
 			},
 		} )
