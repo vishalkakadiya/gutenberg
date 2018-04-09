@@ -9,8 +9,7 @@ import { get } from 'lodash';
  */
 import { __ } from '@wordpress/i18n';
 import { compose } from '@wordpress/element';
-import { getDefaultBlockName } from '@wordpress/blocks';
-import { withContext } from '@wordpress/components';
+import { getDefaultBlockName, withEditorSettings } from '@wordpress/blocks';
 import { decodeEntities } from '@wordpress/utils';
 
 /**
@@ -85,7 +84,7 @@ export default compose(
 			},
 		} )
 	),
-	withContext( 'editor' )( ( settings ) => {
+	withEditorSettings( ( settings ) => {
 		const { templateLock, bodyPlaceholder } = settings;
 
 		return {

@@ -8,8 +8,9 @@ import { flow, noop } from 'lodash';
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { IconButton, withContext } from '@wordpress/components';
+import { IconButton } from '@wordpress/components';
 import { compose } from '@wordpress/element';
+import { withEditorSettings } from '@wordpress/blocks';
 
 /**
  * Internal dependencies
@@ -45,7 +46,7 @@ export default compose(
 			},
 		} )
 	),
-	withContext( 'editor' )( ( settings ) => {
+	withEditorSettings( ( settings ) => {
 		const { templateLock } = settings;
 
 		return {

@@ -7,9 +7,9 @@ import { connect } from 'react-redux';
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { isUnmodifiedDefaultBlock } from '@wordpress/blocks';
+import { isUnmodifiedDefaultBlock, withEditorSettings } from '@wordpress/blocks';
 import { Component, compose } from '@wordpress/element';
-import { ifCondition, withContext } from '@wordpress/components';
+import { ifCondition } from '@wordpress/components';
 
 /**
  * Internal dependencies
@@ -55,7 +55,7 @@ class BlockInsertionPoint extends Component {
 	}
 }
 export default compose(
-	withContext( 'editor' )( ( { templateLock } ) => ( { templateLock } ) ),
+	withEditorSettings( ( { templateLock } ) => ( { templateLock } ) ),
 	ifCondition( ( { templateLock } ) => ! templateLock ),
 	connect(
 		( state, { uid, rootUID } ) => {

@@ -8,8 +8,8 @@ import { first } from 'lodash';
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
-import { IconButton, withContext, withInstanceId } from '@wordpress/components';
-import { getBlockType } from '@wordpress/blocks';
+import { IconButton, withInstanceId } from '@wordpress/components';
+import { getBlockType, withEditorSettings } from '@wordpress/blocks';
 import { compose } from '@wordpress/element';
 
 /**
@@ -109,7 +109,7 @@ export default compose(
 			onMoveUp: createOnMove( 'MOVE_BLOCKS_UP', ...args ),
 		} )
 	),
-	withContext( 'editor' )( ( settings ) => {
+	withEditorSettings( ( settings ) => {
 		const { templateLock } = settings;
 
 		return {
