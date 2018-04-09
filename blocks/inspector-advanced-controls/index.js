@@ -3,4 +3,8 @@
  */
 import { createSlotFill } from '@wordpress/components';
 
-export default createSlotFill( 'InspectorAdvancedControls' );
+const { Fill: InspectorAdvancedControls, Slot } = createSlotFill( 'InspectorAdvancedControls' );
+
+InspectorAdvancedControls.Slot = Slot;
+
+export default InspectorAdvancedControls;
