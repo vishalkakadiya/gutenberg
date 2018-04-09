@@ -197,7 +197,6 @@ class BlockListLayout extends Component {
 	render() {
 		const {
 			blockUIDs,
-			showContextualToolbar,
 			layout,
 			isGroupedByLayout,
 			rootUID,
@@ -223,7 +222,6 @@ class BlockListLayout extends Component {
 						blockRef={ this.setBlockRef }
 						onSelectionStart={ this.onSelectionStart }
 						onShiftSelection={ this.onShiftSelection }
-						showContextualToolbar={ showContextualToolbar }
 						rootUID={ rootUID }
 						layout={ defaultLayout }
 						isFirst={ blockIndex === 0 }
